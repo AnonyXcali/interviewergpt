@@ -26,7 +26,8 @@ const Chat = () => {
       eventSourceRef.current.close();
     }
 
-    eventSourceRef.current = new EventSource(`http://34.132.153.144:5000/stream-query`);
+    eventSourceRef.current = new EventSource(`http://34.132.153.144:5000/stream-query?prompt=${encodeURIComponent(query)}`);
+
 
     // eventSourceRef.current.onmessage = (event) => {
     //   console.log('Received chunk: ', event.data);
@@ -102,7 +103,7 @@ const Chat = () => {
         dataSource={variableRef.current}
         renderItem={(item) => (
           <List.Item>
-            <List.Item.Meta title={item.query} description={item.response} />
+            <List.Item.Meta title={item} description={item} />
           </List.Item>
         )}
       />
