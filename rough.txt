@@ -38,3 +38,13 @@ update the prompt
 - Update APIs
 
 1) Update the /add-question with key custom_solution which is provided via api payload
+
+
+curl -X POST "http://<your-external-ip>:5000/add-question" -H "Content-Type: application/json" -d '{
+    "company": "Google",
+    "type": "String Manipulation",
+    "description": "Reverse a string without using built-in functions.",
+    "aas": 7,
+    "difficulty_score": 5,
+    "custom_solution": "for i in range(len(string)-1, -1, -1): print(string[i], end='')"
+}'
