@@ -4,7 +4,7 @@ import sqlite3
 import time
 
 from .database import add_company, add_type, add_question, get_questions_by_field, reset_db
-from .openai_service import get_openai_response_stream
+from .openai_service import get_openai_response, get_openai_response_stream
 
 bp = Blueprint('routes', __name__)
 CORS(bp, resources={r"/*": {"origins": "*"}})
@@ -84,6 +84,20 @@ def general_query():
             yield f"data: {chunk}\n\n"
 
     return Response(stream_with_context(generate_response()), mimetype='text/event-stream')
+
+@bp.route('/stream-query', methods=['POST'])
+def stream_query():
+    data = request.json
+    prompt = data.get('prompt')
+    if not prompt:
+        return jsonify({"status": "error", "message": "Prompt not provided"}), 400
+
+    def generate():
+        for chunk in get_openai_response_stream(prompt):
+            yield f"data: {chunk}\n\n"
+        yield "event: end\ndata: end\n\n"
+
+    return Response(stream_with_context(generate()), mimetype='text/event-stream')
 
 @bp.route('/stream-questions', methods=['GET'])
 def stream_questions():
