@@ -1,6 +1,6 @@
 import requests
 
-url = 'http://34.132.153.144:5000/add-question'
+url = 'http://<ip>4:5000/add-question'
 payload = {
     "company": "Google",
     "type": "String Manipulation",
@@ -9,4 +9,4 @@ payload = {
     "difficulty_score": 5
 }
 response = requests.post(url, json=payload)
-print(response.json())
+print(response.json())d
