@@ -9,6 +9,8 @@ const Chat = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [currentResponse, setCurrentResponse] = useState('');
   const eventSourceRef = useRef(null);
+  const variableRef = useRef([]);
+
 
   const handleSend = async () => {
     if (!query.trim()) {
@@ -24,16 +26,28 @@ const Chat = () => {
       eventSourceRef.current.close();
     }
 
-    eventSourceRef.current = new EventSource(`http://34.132.153.144:5000/stream-query?prompt=${encodeURIComponent(query)}`);
+    eventSourceRef.current = new EventSource(`http://34.132.153.144:5000/stream-query`);
 
-    eventSourceRef.current.onmessage = (event) => {
-      console.log('Received chunk: ', event.data);
-      if (event.data.includes('Error')) {
-        console.error(event.data);
-      } else {
-        setCurrentResponse((prev) => prev + event.data);
-      }
-    };
+    // eventSourceRef.current.onmessage = (event) => {
+    //   console.log('Received chunk: ', event.data);
+    //   setCurrentResponse((prev) => {
+    //     const updatedResponse = prev + event.data;
+    //     console.log('Updated currentResponse: ', updatedResponse);
+    //     return updatedResponse;
+    //   });
+      
+    // };
+
+    eventSourceRef.current.addEventListener("message", event => {
+      console.log("log", event.data)
+      setCurrentResponse((prev) => {
+        const updatedResponse = prev + event.data;
+        console.log('Updated currentResponse: ', updatedResponse);
+        return updatedResponse;
+      });
+
+    })
+    
 
     eventSourceRef.current.onerror = (error) => {
       console.error('EventSource failed: ', error);
@@ -47,6 +61,7 @@ const Chat = () => {
         const updatedResponses = prev.map((res, index) => 
           index === prev.length - 1 ? { ...res, response: currentResponse } : res
         );
+        console.log('Updated responses: ', updatedResponses);
         return updatedResponses;
       });
       setQuery('');
@@ -64,6 +79,12 @@ const Chat = () => {
     };
   }, []);
 
+  console.log('Rendering component with responses:', variableRef);
+
+  useEffect(() => {
+    variableRef.current = [...variableRef.current, currentResponse];
+  }, [currentResponse]);
+
   return (
     <div>
       <TextArea
@@ -78,7 +99,7 @@ const Chat = () => {
       </Button>
       <List
         itemLayout="horizontal"
-        dataSource={responses}
+        dataSource={variableRef.current}
         renderItem={(item) => (
           <List.Item>
             <List.Item.Meta title={item.query} description={item.response} />
