@@ -117,6 +117,7 @@ def add_question_endpoint():
     openai_response = get_openai_response(prompt)
     
     # Extract the necessary information from the response
+    print(openai_response)
     optimized_solution = openai_response['choices'][0]['message']['content']
     # You will need to parse the response content to extract other details
     # For simplicity, we'll assume the response contains all necessary details in the correct format
