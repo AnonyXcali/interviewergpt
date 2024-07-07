@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
-from .app.models import add_company, add_type, add_question, get_questions_by_type, get_questions_by_company, get_questions_by_difficulty
-from .app.db import reset_db
+from app.models import add_company, add_type, add_question, get_questions_by_type, get_questions_by_company, get_questions_by_difficulty
+from app.db import reset_db
 
 routes = Blueprint('routes', __name__)
 
