@@ -7,7 +7,7 @@ app = Flask(__name__)
 
 # OpenAI configuration
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-OPENAI_API_URL = 'https://api.openai.com/v1/completions'
+OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions'
 
 # Initialize SQLite database
 def init_db():
