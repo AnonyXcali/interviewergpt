@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Input, Button, List, message } from 'antd';
-import axios from 'axios';
 
 const { TextArea } = Input;
 
@@ -9,35 +8,7 @@ const Chat = () => {
   const [responses, setResponses] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentResponse, setCurrentResponse] = useState('');
-
-  useEffect(() => {
-    if (!isLoading) return;
-
-    const eventSource = new EventSource(`http://34.132.153.144:5000/stream-query?prompt=${encodeURIComponent(query)}`);
-
-    eventSource.onmessage = (event) => {
-      console.log(event.data)
-      setCurrentResponse((prev) => prev + event.data);
-    };
-
-    eventSource.onerror = (error) => {
-      console.error('EventSource failed:', error);
-      eventSource.close();
-      setIsLoading(false);
-    };
-
-    eventSource.addEventListener('end', () => {
-      setResponses((prev) => [...prev, { query, response: currentResponse }]);
-      setQuery('');
-      setCurrentResponse('');
-      setIsLoading(false);
-      eventSource.close();
-    });
-
-    return () => {
-      eventSource.close();
-    };
-  }, [isLoading, query]);
+  const eventSourceRef = useRef(null);
 
   const handleSend = async () => {
     if (!query.trim()) {
@@ -45,9 +16,53 @@ const Chat = () => {
       return;
     }
 
-    setCurrentResponse(''); // Reset the current response
     setIsLoading(true);
+    setCurrentResponse('');
+    setResponses((prev) => [...prev, { query, response: '' }]);
+
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+    }
+
+    eventSourceRef.current = new EventSource(`http://34.132.153.144:5000/stream-query?prompt=${encodeURIComponent(query)}`);
+
+    eventSourceRef.current.onmessage = (event) => {
+      console.log('Received chunk: ', event.data);
+      if (event.data.includes('Error')) {
+        console.error(event.data);
+      } else {
+        setCurrentResponse((prev) => prev + event.data);
+      }
+    };
+
+    eventSourceRef.current.onerror = (error) => {
+      console.error('EventSource failed: ', error);
+      eventSourceRef.current.close();
+      setIsLoading(false);
+    };
+
+    eventSourceRef.current.addEventListener('end', () => {
+      console.log('Stream ended');
+      setResponses((prev) => {
+        const updatedResponses = prev.map((res, index) => 
+          index === prev.length - 1 ? { ...res, response: currentResponse } : res
+        );
+        return updatedResponses;
+      });
+      setQuery('');
+      setCurrentResponse('');
+      setIsLoading(false);
+      eventSourceRef.current.close();
+    });
   };
+
+  useEffect(() => {
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+    };
+  }, []);
 
   return (
     <div>
