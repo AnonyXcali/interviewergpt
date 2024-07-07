@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 import os
 import sqlite3
 import requests
@@ -34,7 +34,7 @@ def init_db():
             company_id INTEGER,
             type_id INTEGER,
             aas INTEGER,
-            description TEXT,
+            description TEXT UNIQUE NOT NULL,
             difficulty_score INTEGER,
             FOREIGN KEY (company_id) REFERENCES Company(id),
             FOREIGN KEY (type_id) REFERENCES Type(id)
@@ -45,6 +45,19 @@ def init_db():
     conn.close()
 
 init_db()
+
+# Function to reset the database
+def reset_db():
+    conn = sqlite3.connect('interview_helper.db')
+    cursor = conn.cursor()
+
+    cursor.execute('DROP TABLE IF EXISTS Company')
+    cursor.execute('DROP TABLE IF EXISTS Type')
+    cursor.execute('DROP TABLE IF EXISTS QuestionBank')
+
+    conn.commit()
+    conn.close()
+    init_db()
 
 # Function to add a company to the database
 def add_company(name):
@@ -73,23 +86,22 @@ def add_question(company_id, type_id, aas, description, difficulty_score):
     conn = sqlite3.connect('interview_helper.db')
     cursor = conn.cursor()
     cursor.execute('''
-        INSERT INTO QuestionBank (company_id, type_id, aas, description, difficulty_score)
+        INSERT OR IGNORE INTO QuestionBank (company_id, type_id, aas, description, difficulty_score)
         VALUES (?, ?, ?, ?, ?)
     ''', (company_id, type_id, aas, description, difficulty_score))
     conn.commit()
     conn.close()
 
-# Function to generate a response from OpenAI using GPT-4
+# Function to generate a response from OpenAI using GPT-4o
 def get_openai_response(prompt):
     payload = {
         "model": "gpt-4o",
         "messages": [
-            {"role": "system", "content": "You are a coding interview prepare assistant that helps the user to prepare for interviews for companies like FAANG."},
+            {"role": "system", "content": "You are a coding interview preparation assistant that helps the user to prepare for interviews for companies like FAANG."},
             {"role": "user", "content": prompt}
         ],
-        "max_tokens": 1000
+        "max_tokens": 150
     }
-    
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {OPENAI_API_KEY}"
@@ -103,36 +115,50 @@ def add_question_endpoint():
     data = request.json
     company_id = add_company(data['company'])
     type_id = add_type(data['type'])
-    
-    # Generate a prompt for GPT-4 to process
-    prompt = f"""
-    Here is a new interview question for the {data['company']} company, for a {data['type']} position:
-    {data['description']}
-    
-    Please provide the following:
-    1. An optimized solution.
-    2. Questions to be asked before attempting the question.
-    3. Algorithm's Application Score (AAS) for the optimized solution.
-    4. Similar interview questions.
-    5. A difficulty score from 0 to 10, where higher is more difficult.
-    """
-    
-    # Get GPT-4 response
+
+    # Generate a prompt for GPT-4o to process
+    if 'custom_solution' in data:
+        prompt = f"""
+        The following prompt requires you to update your memory - 
+        Here is a new interview question for the {data['company']} company, for a {data['type']} position:
+        {data['description']} and {data['custom_solution']} solution
+        
+        Please provide the following:
+        1. An optimized solution.
+        2. Questions to be asked before attempting the question.
+        3. Algorithm's Application Score (AAS) for the optimized solution.
+        4. Similar interview questions.
+        5. A difficulty score from 0 to 10, where higher is more difficult.
+        6. [OPTIONAL IF SOLUTION IS ALREADY OPTIMIZED] Point out caveats or shortcomings for the provided solution
+        """
+    else:
+        prompt = f"""
+        The following prompt requires you to update your memory - 
+        Here is a new interview question for the {data['company']} company, for a {data['type']} position:
+        {data['description']}
+        
+        Please provide the following:
+        1. An optimized solution.
+        2. Questions to be asked before attempting the question.
+        3. Algorithm's Application Score (AAS) for the optimized solution.
+        4. Similar interview questions.
+        5. A difficulty score from 0 to 10, where higher is more difficult.
+        """
+
+    # Get GPT-4o response
     openai_response = get_openai_response(prompt)
-    print(openai_response)
-    
+
     # Extract the necessary information from the response
     optimized_solution = openai_response['choices'][0]['message']['content']
-    # You will need to parse the response content to extract other details
-    # For simplicity, we'll assume the response contains all necessary details in the correct format
-    
+    # Additional parsing and processing as needed...
+
     # Example: extracting details (this would need proper parsing based on response format)
     aas = 7  # This would be extracted from the response
     difficulty_score = 5  # This would be extracted from the response
-    
+
     # Add question to the database
     add_question(company_id, type_id, aas, data['description'], difficulty_score)
-    
+
     return jsonify({"status": "success", "optimized_solution": optimized_solution}), 201
 
 # Endpoint to retrieve questions based on type
@@ -183,5 +209,61 @@ def get_questions_by_difficulty(difficulty_score):
     conn.close()
     return jsonify(questions)
 
+# Endpoint to reset the database
+@app.route('/reset-db', methods=['POST'])
+def reset_db_endpoint():
+    reset_db()
+    return jsonify({"status": "success", "message": "Database reset successfully"}), 200
+
+# New endpoint for general query based on interview questions or general information
+@app.route('/query', methods=['POST'])
+def general_query():
+    data = request.json
+    prompt = data.get('prompt')
+    if not prompt:
+        return jsonify({"status": "error", "message": "Prompt not provided"}), 400
+
+    openai_response = get_openai_response(prompt)
+    return jsonify(openai_response)
+
+# New endpoint for streamable output for questions
+@app.route('/stream-questions', methods=['GET'])
+def stream_questions():
+    def generate():
+        conn = sqlite3.connect('interview_helper.db')
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT QuestionBank.description, Company.name, Type.name, QuestionBank.aas, QuestionBank.difficulty_score
+            FROM QuestionBank
+            JOIN Company ON QuestionBank.company_id = Company.id
+            JOIN Type ON QuestionBank.type_id = Type.id
+        ''')
+        for row in cursor.fetchall():
+            yield f"{row}\n"
+        conn.close()
+
+    return Response(generate(), mimetype='text/plain')
+
+# New endpoint to search questions based on a string
+@app.route('/search-questions', methods=['GET'])
+def search_questions():
+    query = request.args.get('query')
+    if not query:
+        return jsonify({"status": "error", "message": "Query not provided"}), 400
+
+    conn = sqlite3.connect('interview_helper.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT QuestionBank.description, Company.name, Type.name, QuestionBank.aas, QuestionBank.difficulty_score
+        FROM QuestionBank
+        JOIN Company ON QuestionBank.company_id = Company.id
+        JOIN Type ON QuestionBank.type_id = Type.id
+        WHERE QuestionBank.description LIKE ?
+    ''', ('%' + query + '%',))
+    questions = cursor.fetchall()
+    conn.close()
+    return jsonify(questions)
+
+# Ensure the server runs
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

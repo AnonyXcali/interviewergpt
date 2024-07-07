@@ -1,0 +1,40 @@
+update and regenerate the server code with the following
+
+- For role system
+
+content key - "You are a coding interview prepare assistant that helps the user to prepare for interviews for companies like FAANG."
+
+update the prompt
+- update the existing prompt's beginning line with
+"The following prompt requires you to update your memory -" 
+
+- if the payload has key called custom_solution then the prompt should be
+
+ # Generate a prompt for GPT-4 to process
+    prompt = f"""
+    The following prompt requires you to update your memory - 
+    Here is a new interview question for the {data['company']} company, for a {data['type']} position:
+    {data['description']} and {data['custom_solution']} solution
+    
+    Please provide the following:
+    1. An optimized solution.
+    2. Questions to be asked before attempting the question.
+    3. Algorithm's Application Score (AAS) for the optimized solution.
+    4. Similar interview questions.
+    5. A difficulty score from 0 to 10, where higher is more difficult.
+    6. [OPTIONAL IF SOLUTION IS ALREADY OPTIMIZED] Point out caveats or shortcomings for the provided solution
+    """
+
+
+- New APIs
+
+1) Add a new endpoint for general query based on interview questions or general information.
+
+2) Add a new endpoint for streamable output for questions
+
+
+3) Add an api that searches based on string and returns all possible questions containing that string
+
+- Update APIs
+
+1) Update the /add-question with key custom_solution which is provided via api payload
