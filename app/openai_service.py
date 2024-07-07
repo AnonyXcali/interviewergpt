@@ -29,7 +29,7 @@ def get_openai_response_stream(prompt):
             {"role": "system", "content": "You are a coding interview preparation assistant that helps the user to prepare for interviews for companies like FAANG."},
             {"role": "user", "content": prompt}
         ],
-        "max_tokens": 150,
+        "max_tokens": 1000,
         "stream": True  # Enable streaming mode
     }
     headers = {

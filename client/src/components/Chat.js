@@ -9,8 +9,6 @@ const Chat = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [currentResponse, setCurrentResponse] = useState('');
   const eventSourceRef = useRef(null);
-  const variableRef = useRef([]);
-
 
   const handleSend = async () => {
     if (!query.trim()) {
@@ -28,14 +26,17 @@ const Chat = () => {
 
     eventSourceRef.current = new EventSource(`http://34.132.153.144:5000/stream-query?query=${encodeURIComponent(query)}`);
 
-
     eventSourceRef.current.onmessage = (event) => {
-      console.log('Received chunk: ', event.data);
       try {
-        const chunk = JSON.parse(event.data);  // Directly parse the JSON string
-        if (chunk.content) {
+        if (event.data === 'data: [DONE]') {
+          eventSourceRef.current.dispatchEvent(new Event('end'));
+          return;
+        }
+        const replaced = event.data.replace('data: ', '');
+        const chunk = JSON.parse(replaced);  // Directly parse the JSON string
+        if (chunk.choices && chunk.choices[0] && chunk.choices[0].delta && chunk.choices[0].delta.content) {
           setCurrentResponse((prev) => {
-            const updatedResponse = prev + chunk.content;
+            const updatedResponse = prev + chunk.choices[0].delta.content;
             console.log('Updated currentResponse: ', updatedResponse);
             return updatedResponse;
           });
@@ -53,13 +54,15 @@ const Chat = () => {
 
     eventSourceRef.current.addEventListener('end', () => {
       console.log('Stream ended');
-      setResponses((prev) => {
-        const updatedResponses = prev.map((res, index) => 
-          index === prev.length - 1 ? { ...res, response: currentResponse } : res
-        );
-        console.log('Updated responses: ', updatedResponses);
-        return updatedResponses;
-      });
+      // setResponses((prev) => {
+      //   const updatedResponses = [...prev];
+      //   const lastIndex = updatedResponses.length - 1;
+      //   if (lastIndex >= 0) {
+      //     updatedResponses[lastIndex].response = currentResponse;
+      //   }
+      //   console.log('Updated responses: ', updatedResponses);
+      //   return updatedResponses;
+      // });
       setQuery('');
       setCurrentResponse('');
       setIsLoading(false);
@@ -75,10 +78,15 @@ const Chat = () => {
     };
   }, []);
 
-  console.log('Rendering component with responses:', variableRef);
-
   useEffect(() => {
-    variableRef.current = [...variableRef.current, currentResponse];
+    if (currentResponse) {
+      setResponses((prev) => {
+        const lastResponseIndex = prev.length - 1;
+        const updatedResponses = [...prev];
+        updatedResponses[lastResponseIndex].response = currentResponse;
+        return updatedResponses;
+      });
+    }
   }, [currentResponse]);
 
   return (
@@ -95,10 +103,10 @@ const Chat = () => {
       </Button>
       <List
         itemLayout="horizontal"
-        dataSource={variableRef.current}
+        dataSource={responses}
         renderItem={(item) => (
           <List.Item>
-            <List.Item.Meta title={item} description={item} />
+            <List.Item.Meta title={item.query} description={item.response} />
           </List.Item>
         )}
       />
