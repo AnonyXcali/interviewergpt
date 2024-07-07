@@ -119,6 +119,7 @@ def add_question_endpoint():
     
     # Get GPT-4 response
     openai_response = get_openai_response(prompt)
+    print(openai_response)
     
     # Extract the necessary information from the response
     optimized_solution = openai_response['choices'][0]['message']['content']
