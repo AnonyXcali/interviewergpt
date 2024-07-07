@@ -1,9 +1,13 @@
 from flask import Blueprint, request, jsonify, Response, stream_with_context
-from .database import init_db, reset_db, add_company, add_type, add_question, get_questions_by_field
-from .openai_service import get_openai_response, get_openai_response_stream
+from flask_cors import CORS
 import sqlite3
+import time
+
+from .database import add_company, add_type, add_question, get_questions_by_field, reset_db
+from .openai_service import get_openai_response_stream
 
 bp = Blueprint('routes', __name__)
+CORS(bp, resources={r"/*": {"origins": "*"}})
 
 @bp.route('/add-question', methods=['POST'])
 def add_question_endpoint():
@@ -11,13 +15,12 @@ def add_question_endpoint():
     company_id = add_company(data['company'])
     type_id = add_type(data['type'])
 
-    # Generate a prompt for GPT-4o to process
     if 'custom_solution' in data:
         prompt = f"""
         The following prompt requires you to update your memory - 
         Here is a new interview question for the {data['company']} company, for a {data['type']} position:
         {data['description']} and {data['custom_solution']} solution
-        
+
         Please provide the following:
         1. An optimized solution.
         2. Questions to be asked before attempting the question.
@@ -31,7 +34,7 @@ def add_question_endpoint():
         The following prompt requires you to update your memory - 
         Here is a new interview question for the {data['company']} company, for a {data['type']} position:
         {data['description']}
-        
+
         Please provide the following:
         1. An optimized solution.
         2. Questions to be asked before attempting the question.
@@ -40,18 +43,11 @@ def add_question_endpoint():
         5. A difficulty score from 0 to 10, where higher is more difficult.
         """
 
-    # Get GPT-4o response
     openai_response = get_openai_response(prompt)
-
-    # Extract the necessary information from the response
     optimized_solution = openai_response['choices'][0]['message']['content']
-    # Additional parsing and processing as needed...
+    aas = 7  # Placeholder value, replace with actual logic to compute AAS
+    difficulty_score = 5  # Placeholder value, replace with actual logic to compute difficulty score
 
-    # Example: extracting details (this would need proper parsing based on response format)
-    aas = 7  # This would be extracted from the response
-    difficulty_score = 5  # This would be extracted from the response
-
-    # Add question to the database
     add_question(company_id, type_id, aas, data['description'], difficulty_score)
 
     return jsonify({"status": "success", "optimized_solution": optimized_solution}), 201
@@ -86,7 +82,7 @@ def general_query():
     def generate_response():
         for chunk in get_openai_response_stream(prompt):
             yield f"data: {chunk}\n\n"
-    
+
     return Response(stream_with_context(generate_response()), mimetype='text/event-stream')
 
 @bp.route('/stream-questions', methods=['GET'])

@@ -12,7 +12,7 @@ const Chat = () => {
 
   useEffect(() => {
     if (isLoading) {
-      const eventSource = new EventSource('http://<your-server-ip>:5000/stream-query');
+      const eventSource = new EventSource('http://34.132.153.144:5000/query');
 
       eventSource.onmessage = (event) => {
         setCurrentResponse((prev) => prev + event.data);
