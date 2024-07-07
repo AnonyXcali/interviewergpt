@@ -86,18 +86,21 @@ def general_query():
 
     return Response(stream_with_context(generate_response()), mimetype='text/event-stream')
 
-@bp.route('/stream-query', methods=['GET'])
 def stream_query():
-    prompt = request.args.get('prompt')
-    if not prompt:
-        return jsonify({"status": "error", "message": "Prompt not provided"}), 400
+    data = request.json.get('query')
+    return get_openai_response_stream(data)
+# @bp.route('/stream-query', methods=['GET'])
+# def stream_query():
+#     prompt = request.args.get('prompt')
+#     if not prompt:
+#         return jsonify({"status": "error", "message": "Prompt not provided"}), 400
 
-    def generate():
-        for chunk in get_openai_response_stream(prompt):
-            yield f"data: {chunk}\n\n"
-        yield "event: end\ndata: end\n\n"
+#     def generate():
+#         for chunk in get_openai_response_stream(prompt):
+#             yield f"data: {chunk}\n\n"
+#         yield "event: end\ndata: end\n\n"
 
-    return Response(stream_with_context(generate()), mimetype='text/event-stream')
+#     return Response(stream_with_context(generate()), mimetype='text/event-stream')
 
 # @bp.route('/stream-query', methods=['GET'])
 # def stream_query():

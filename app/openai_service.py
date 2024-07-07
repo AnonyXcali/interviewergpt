@@ -1,5 +1,6 @@
 import requests
 import os
+from flask import Response, stream_with_context
 
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions'
@@ -23,7 +24,7 @@ def get_openai_response(prompt):
 
 def get_openai_response_stream(prompt):
     payload = {
-        "model": "gpt-4",
+        "model": "gpt-4o",
         "messages": [
             {"role": "system", "content": "You are a coding interview preparation assistant that helps the user to prepare for interviews for companies like FAANG."},
             {"role": "user", "content": prompt}
@@ -38,9 +39,11 @@ def get_openai_response_stream(prompt):
 
     response = requests.post(OPENAI_API_URL, headers=headers, json=payload, stream=True)
 
-    for line in response.iter_lines():
-        if line:
-            decoded_line = line.decode('utf-8')
-            yield decoded_line
+    def generate():
+        for line in response.iter_lines():
+            if line:
+                decoded_line = line.decode('utf-8')
+                yield f"data: {decoded_line}\n\n"
+        yield "event: end\ndata: end\n\n"  # Indicate end of the stream
 
-    yield "end"  # Indicate end of the stream
+    return Response(stream_with_context(generate()), content_type='text/event-stream')
