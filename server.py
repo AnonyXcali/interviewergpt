@@ -83,9 +83,13 @@ def add_question(company_id, type_id, aas, description, difficulty_score):
 def get_openai_response(prompt):
     payload = {
         "model": "gpt-4",
-        "messages": [{"role": "user", "content": prompt}],
-        "max_tokens": 150
+        "messages": [
+            {"role": "system", "content": "You are a coding interview prepare assistant that helps the user to prepare for interviews for companies like FAANG."},
+            {"role": "user", "content": prompt}
+        ],
+        "max_tokens": 1000
     }
+    
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {OPENAI_API_KEY}"
@@ -117,7 +121,6 @@ def add_question_endpoint():
     openai_response = get_openai_response(prompt)
     
     # Extract the necessary information from the response
-    print(openai_response)
     optimized_solution = openai_response['choices'][0]['message']['content']
     # You will need to parse the response content to extract other details
     # For simplicity, we'll assume the response contains all necessary details in the correct format
