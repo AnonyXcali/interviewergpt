@@ -22,6 +22,12 @@ def add_question_endpoint():
         Here is a new interview question for the {data['company']} company, for a {data['type']} position:
         {data['description']} and {data['custom_solution']} solution
 
+        NOTE -  Algorithm's Application Score or AAS is the score by which one can determine the extent of 
+        usability of the optimized solution's algorithm across multiple questions which may or may not differ
+        by type of coding question. Score ranges from 1 to 10 where the particular solution in context which you
+        would provide with highers score means it can be used in a generic or modified way with other questions.
+        Please assume at your suitable best.
+
         Please provide the following:
         1. An optimized solution.
         2. Questions to be asked before attempting the question.
@@ -29,6 +35,8 @@ def add_question_endpoint():
         4. Similar interview questions.
         5. A difficulty score from 0 to 10, where higher is more difficult.
         6. [OPTIONAL IF SOLUTION IS ALREADY OPTIMIZED] Point out caveats or shortcomings for the provided solution
+        7. A JSON structure containing the following keys title, type, optimized_solution, AAS, similar (Array of titles of similar interview questions),
+        difficulty.
         """
     else:
         prompt = f"""
@@ -36,15 +44,25 @@ def add_question_endpoint():
         Here is a new interview question for the {data['company']} company, for a {data['type']} position:
         {data['description']}
 
+        NOTE -  Algorithm's Application Score or AAS is the score by which one can determine the extent of 
+        usability of the optimized solution's algorithm across multiple questions which may or may not differ
+        by type of coding question. Score ranges from 1 to 10 where the particular solution in context which you
+        would provide with highers score means it can be used in a generic or modified way with other questions.
+        Please assume at your suitable best.
+
         Please provide the following:
         1. An optimized solution.
         2. Questions to be asked before attempting the question.
         3. Algorithm's Application Score (AAS) for the optimized solution.
         4. Similar interview questions.
         5. A difficulty score from 0 to 10, where higher is more difficult.
+        6. A JSON structure containing the following keys title, type, optimized_solution, AAS, similar (Array of titles of similar interview questions),
+        difficulty.
+
         """
 
     openai_response = get_openai_response(prompt)
+    print(openai_response)
     optimized_solution = openai_response['choices'][0]['message']['content']
     aas = 7  # Placeholder value, replace with actual logic to compute AAS
     difficulty_score = 5  # Placeholder value, replace with actual logic to compute difficulty score

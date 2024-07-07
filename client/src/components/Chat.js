@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Input, Button, List, message } from 'antd';
+import ReactMarkdown from 'react-markdown';
 
 const { TextArea } = Input;
 
@@ -27,8 +28,9 @@ const Chat = () => {
     eventSourceRef.current = new EventSource(`http://34.132.153.144:5000/stream-query?query=${encodeURIComponent(query)}`);
 
     eventSourceRef.current.onmessage = (event) => {
+      console.log('Received chunk: ', event.data);
       try {
-        if (event.data === 'data: [DONE]') {
+        if (event.data === '[DONE]') {
           eventSourceRef.current.dispatchEvent(new Event('end'));
           return;
         }
@@ -106,7 +108,10 @@ const Chat = () => {
         dataSource={responses}
         renderItem={(item) => (
           <List.Item>
-            <List.Item.Meta title={item.query} description={item.response} />
+            <List.Item.Meta
+              title={item.query}
+              description={<ReactMarkdown>{item.response}</ReactMarkdown>}
+            />
           </List.Item>
         )}
       />

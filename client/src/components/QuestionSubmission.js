@@ -11,7 +11,7 @@ const QuestionSubmission = () => {
 
   const onFinish = async (values) => {
     try {
-      await axios.post('http://<your-server-ip>:5000/add-question', {
+      await axios.post('http://34.132.153.144:5000/add-question', {
         ...values,
         custom_solution: code,
       });
@@ -33,12 +33,12 @@ const QuestionSubmission = () => {
       <Form.Item name="description" label="Description" rules={[{ required: true }]}>
         <Input.TextArea rows={4} />
       </Form.Item>
-      <Form.Item name="aas" label="Algorithm's Application Score" rules={[{ required: true }]}>
+      {/* <Form.Item name="aas" label="Algorithm's Application Score" rules={[{ required: true }]}>
         <InputNumber min={1} max={10} />
       </Form.Item>
       <Form.Item name="difficulty_score" label="Difficulty Score" rules={[{ required: true }]}>
         <InputNumber min={1} max={10} />
-      </Form.Item>
+      </Form.Item> */}
       <Form.Item label="Custom Solution">
         <CodeEditor code={code} setCode={setCode} />
       </Form.Item>
