@@ -26,29 +26,24 @@ const Chat = () => {
       eventSourceRef.current.close();
     }
 
-    eventSourceRef.current = new EventSource(`http://34.132.153.144:5000/stream-query?prompt=${encodeURIComponent(query)}`);
+    eventSourceRef.current = new EventSource(`http://34.132.153.144:5000/stream-query?query=${encodeURIComponent(query)}`);
 
 
-    // eventSourceRef.current.onmessage = (event) => {
-    //   console.log('Received chunk: ', event.data);
-    //   setCurrentResponse((prev) => {
-    //     const updatedResponse = prev + event.data;
-    //     console.log('Updated currentResponse: ', updatedResponse);
-    //     return updatedResponse;
-    //   });
-      
-    // };
-
-    eventSourceRef.current.addEventListener("message", event => {
-      console.log("log", event.data)
-      setCurrentResponse((prev) => {
-        const updatedResponse = prev + event.data;
-        console.log('Updated currentResponse: ', updatedResponse);
-        return updatedResponse;
-      });
-
-    })
-    
+    eventSourceRef.current.onmessage = (event) => {
+      console.log('Received chunk: ', event.data);
+      try {
+        const chunk = JSON.parse(event.data);  // Directly parse the JSON string
+        if (chunk.content) {
+          setCurrentResponse((prev) => {
+            const updatedResponse = prev + chunk.content;
+            console.log('Updated currentResponse: ', updatedResponse);
+            return updatedResponse;
+          });
+        }
+      } catch (error) {
+        console.error('Error parsing chunk: ', error);
+      }
+    };
 
     eventSourceRef.current.onerror = (error) => {
       console.error('EventSource failed: ', error);

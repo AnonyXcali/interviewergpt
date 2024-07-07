@@ -86,9 +86,10 @@ def general_query():
 
     return Response(stream_with_context(generate_response()), mimetype='text/event-stream')
 
+@bp.route('/stream-query', methods=['GET'])
 def stream_query():
-    data = request.json.get('query')
-    return get_openai_response_stream(data)
+    prompt = request.args.get('query')
+    return get_openai_response_stream(prompt)
 # @bp.route('/stream-query', methods=['GET'])
 # def stream_query():
 #     prompt = request.args.get('prompt')
