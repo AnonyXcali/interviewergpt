@@ -93,7 +93,7 @@ def stream_query():
 
     def generate():
         for chunk in get_openai_response_stream(prompt):
-            yield f"data: {chunk}\n\n"
+            yield f"data: {chunk['choices'][0]['delta']['content']}\n\n"
         yield "event: end\ndata: end\n\n"
 
     return Response(stream_with_context(generate()), mimetype='text/event-stream')

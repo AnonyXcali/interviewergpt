@@ -11,32 +11,33 @@ const Chat = () => {
   const [currentResponse, setCurrentResponse] = useState('');
 
   useEffect(() => {
-    if (isLoading) {
-      const eventSource = new EventSource(`http://34.132.153.144:5000/stream-query?prompt=${encodeURIComponent(query)}`);
+    if (!isLoading) return;
 
-      eventSource.onmessage = (event) => {
-        setCurrentResponse((prev) => prev + event.data);
-      };
+    const eventSource = new EventSource(`http://34.132.153.144:5000/stream-query?prompt=${encodeURIComponent(query)}`);
 
-      eventSource.onerror = (error) => {
-        console.error('EventSource failed:', error);
-        eventSource.close();
-        setIsLoading(false);
-      };
+    eventSource.onmessage = (event) => {
+      console.log(event.data)
+      setCurrentResponse((prev) => prev + event.data);
+    };
 
-      eventSource.addEventListener('end', () => {
-        setResponses((prev) => [...prev, { query, response: currentResponse }]);
-        setQuery('');
-        setCurrentResponse('');
-        setIsLoading(false);
-        eventSource.close();
-      });
+    eventSource.onerror = (error) => {
+      console.error('EventSource failed:', error);
+      eventSource.close();
+      setIsLoading(false);
+    };
 
-      return () => {
-        eventSource.close();
-      };
-    }
-  }, [isLoading, query, currentResponse]);
+    eventSource.addEventListener('end', () => {
+      setResponses((prev) => [...prev, { query, response: currentResponse }]);
+      setQuery('');
+      setCurrentResponse('');
+      setIsLoading(false);
+      eventSource.close();
+    });
+
+    return () => {
+      eventSource.close();
+    };
+  }, [isLoading, query]);
 
   const handleSend = async () => {
     if (!query.trim()) {
@@ -44,6 +45,7 @@ const Chat = () => {
       return;
     }
 
+    setCurrentResponse(''); // Reset the current response
     setIsLoading(true);
   };
 
