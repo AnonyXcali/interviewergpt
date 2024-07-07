@@ -85,10 +85,9 @@ def general_query():
 
     return Response(stream_with_context(generate_response()), mimetype='text/event-stream')
 
-@bp.route('/stream-query', methods=['POST'])
+@bp.route('/stream-query', methods=['GET'])
 def stream_query():
-    data = request.json
-    prompt = data.get('prompt')
+    prompt = request.args.get('prompt')
     if not prompt:
         return jsonify({"status": "error", "message": "Prompt not provided"}), 400
 

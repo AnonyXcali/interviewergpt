@@ -12,7 +12,7 @@ const Chat = () => {
 
   useEffect(() => {
     if (isLoading) {
-      const eventSource = new EventSource('http://34.132.153.144:5000/query');
+      const eventSource = new EventSource(`http://34.132.153.144:5000/stream-query?prompt=${encodeURIComponent(query)}`);
 
       eventSource.onmessage = (event) => {
         setCurrentResponse((prev) => prev + event.data);
@@ -45,13 +45,6 @@ const Chat = () => {
     }
 
     setIsLoading(true);
-
-    try {
-      await axios.post('http://34.132.153.144:5000/query', { prompt: query });
-    } catch (error) {
-      console.error('Error sending query', error);
-      setIsLoading(false);
-    }
   };
 
   return (
