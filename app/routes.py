@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, Response
 from .database import init_db, reset_db, add_company, add_type, add_question, get_questions_by_field
-from .openai_service.py import get_openai_response
+from .openai_service import get_openai_response
 import sqlite3
 
 bp = Blueprint('routes', __name__)
