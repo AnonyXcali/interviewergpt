@@ -93,14 +93,22 @@ def stream_query():
         return jsonify({"status": "error", "message": "Prompt not provided"}), 400
 
     def generate():
-        for chunk in get_openai_response_stream(prompt):
-            chunk_data = json.loads(chunk)
-            if 'choices' in chunk_data and len(chunk_data['choices']) > 0 and 'delta' in chunk_data['choices'][0]:
-                content = chunk_data['choices'][0]['delta'].get('content', '')
-                yield f"data: {content}\n\n"
-        yield "event: end\ndata: end\n\n"
+        try:
+            for chunk in get_openai_response_stream(prompt):
+                try:
+                    chunk_data = json.loads(chunk)
+                    if 'choices' in chunk_data and len(chunk_data['choices']) > 0 and 'delta' in chunk_data['choices'][0]:
+                        content = chunk_data['choices'][0]['delta'].get('content', '')
+                        yield f"data: {content}\n\n"
+                except json.JSONDecodeError as e:
+                    print(f"Error decoding JSON: {e}")
+                    continue
+            yield "event: end\ndata: end\n\n"
+        except Exception as e:
+            print(f"Error in stream-query generate function: {e}")
 
     return Response(stream_with_context(generate()), mimetype='text/event-stream')
+
 
 @bp.route('/stream-questions', methods=['GET'])
 def stream_questions():
