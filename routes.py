@@ -58,4 +58,3 @@ def get_questions_by_difficulty_endpoint(difficulty_score):
 def reset_db_endpoint():
     reset_db()
     return jsonify({"status": "success", "message": "Database reset successfully"}), 200
-s
