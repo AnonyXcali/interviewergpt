@@ -82,7 +82,7 @@ def add_question(company_id, type_id, aas, description, difficulty_score):
 # Function to generate a response from OpenAI using GPT-4
 def get_openai_response(prompt):
     payload = {
-        "model": "gpt-4",
+        "model": "gpt-4o",
         "messages": [
             {"role": "system", "content": "You are a coding interview prepare assistant that helps the user to prepare for interviews for companies like FAANG."},
             {"role": "user", "content": prompt}
