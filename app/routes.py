@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, Response, stream_with_context
 from flask_cors import CORS
 import sqlite3
+import json
 import time
 
 from .database import add_company, add_type, add_question, get_questions_by_field, reset_db
@@ -93,7 +94,10 @@ def stream_query():
 
     def generate():
         for chunk in get_openai_response_stream(prompt):
-            yield f"data: {chunk['choices'][0]['delta']['content']}\n\n"
+            chunk_data = json.loads(chunk)
+            if 'choices' in chunk_data and len(chunk_data['choices']) > 0 and 'delta' in chunk_data['choices'][0]:
+                content = chunk_data['choices'][0]['delta'].get('content', '')
+                yield f"data: {content}\n\n"
         yield "event: end\ndata: end\n\n"
 
     return Response(stream_with_context(generate()), mimetype='text/event-stream')
