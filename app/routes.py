@@ -1,6 +1,6 @@
-from flask import Blueprint, request, jsonify, Response
+from flask import Blueprint, request, jsonify, Response, stream_with_context
 from .database import init_db, reset_db, add_company, add_type, add_question, get_questions_by_field
-from .openai_service import get_openai_response
+from .openai_service import get_openai_response, get_openai_response_stream
 import sqlite3
 
 bp = Blueprint('routes', __name__)
@@ -83,8 +83,11 @@ def general_query():
     if not prompt:
         return jsonify({"status": "error", "message": "Prompt not provided"}), 400
 
-    openai_response = get_openai_response(prompt)
-    return jsonify(openai_response)
+    def generate_response():
+        for chunk in get_openai_response_stream(prompt):
+            yield f"data: {chunk}\n\n"
+    
+    return Response(stream_with_context(generate_response()), mimetype='text/event-stream')
 
 @bp.route('/stream-questions', methods=['GET'])
 def stream_questions():
